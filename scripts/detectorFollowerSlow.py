@@ -150,6 +150,7 @@ class RosbotFollower:
 		
 	def detectHuman(self, sortedClusters):
 		firstLeg = sortedClusters[0]
+		firstLegDetected = False
 		twoLegsDetected = False
 		secondLeg = Point()
 		humanPosition = Point()
@@ -173,6 +174,7 @@ class RosbotFollower:
 			if r < self.calibrationDistance and twoLegsDetected:
 				self.lastHumanPosition = humanPositionTemp
 				humanPosition = humanPositionTemp
+				firstLegDetected = True
 				self.lastDetectionTime = rospy.get_time()
 				self.positionCalibration = False
 				led = Bool()
@@ -183,6 +185,7 @@ class RosbotFollower:
 						+ (self.lastHumanPosition.y - humanPositionTemp.y)**2)
 			if distanceChange < self.humanPositionChangeThreshold:
 				humanPosition = humanPositionTemp
+				firstLegDetected = True
 				self.lastHumanPosition = humanPosition
 				self.lastDetectionTime = rospy.get_time()
 			else: 
@@ -194,10 +197,54 @@ class RosbotFollower:
 					self.ledPub.publish(led)
 					self.positionCalibration = True
 		
-		return (firstLeg, secondLeg, humanPosition, twoLegsDetected)
+		return (firstLeg, secondLeg, humanPosition, firstLegDetected, twoLegsDetected)
 		
-	def publishMarkers(self, firstLeg, secondLeg, humanPosition, twoLegsDetected):
+	def publishMarkers(self, firstLeg, secondLeg, humanPosition, firstLegDetected, twoLegsDetected, sortedClusters):
 		legMarker = Marker()
+		legMarker.header.frame_id = "laser"
+		legMarker.ns = "person"
+		legMarker.header.stamp = rospy.Time()
+		legMarker.type = Marker.CYLINDER
+		legMarker.action = Marker.ADD
+		legMarker.pose.orientation.x = 0.0
+		legMarker.pose.orientation.y = 0.0
+		legMarker.pose.orientation.z = 0.0
+		legMarker.pose.orientation.w = 1.0
+		legMarker.scale.x = 0.04
+		legMarker.scale.y = 0.04
+		legMarker.scale.z = 0.04
+		legMarker.color.a = 1.0
+		legMarker.color.r = 0.0
+		legMarker.color.g = 0.0
+		legMarker.color.b = 1.0
+		legMarker.lifetime = rospy.Duration(0.5)
+		
+		if not self.positionCalibration:
+			#first leg
+			if firstLegDetected:
+				legMarker.id = 1
+				legMarker.pose.position = firstLeg
+				legMarker.pose.position.z = 0.02
+				self.legPub.publish(legMarker)
+			
+			#second leg
+			if twoLegsDetected:
+				legMarker.id = 2
+				legMarker.pose.position = secondLeg
+				self.legPub.publish(legMarker)
+			
+			#human position
+			legMarker.id = 3
+			legMarker.scale.z = 0.2
+			legMarker.pose.position = humanPosition
+			legMarker.pose.position.z = 0.1
+			legMarker.color.r = 1.0
+			legMarker.color.b = 0.0
+			self.legPub.publish(legMarker)
+
+
+		legMarker = Marker()
+		legMarker.ns = "legs"
 		legMarker.header.frame_id = "laser"
 		legMarker.header.stamp = rospy.Time()
 		legMarker.type = Marker.SPHERE
@@ -213,23 +260,14 @@ class RosbotFollower:
 		legMarker.color.r = 0.0
 		legMarker.color.g = 1.0
 		legMarker.color.b = 0.0
-		
-		#first leg
-		legMarker.id = 1
-		legMarker.pose.position = firstLeg
-		self.legPub.publish(legMarker)
-		
-		#second leg
-		if twoLegsDetected:
-			legMarker.id = 2
-			legMarker.pose.position = secondLeg
+		legMarker.lifetime = rospy.Duration(0.2)
+		i = 1
+		for x in sortedClusters:
+			legMarker.id = i
+			i += 1
+			legMarker.pose.position.x = x.x
+			legMarker.pose.position.y = x.y
 			self.legPub.publish(legMarker)
-		
-		#human position
-		legMarker.id = 3
-		legMarker.pose.position = humanPosition
-		legMarker.color.r = 1.0
-		self.legPub.publish(legMarker)
 	
 	def controlRosbot(self, humanPosition):
 		r = math.sqrt( humanPosition.x ** 2 + humanPosition.y ** 2)
@@ -295,8 +333,8 @@ class RosbotFollower:
 				self.speedPub.publish(rosbotControl)
 			return
 		
-		(firstLeg, secondLeg, humanPosition, twoLegsDetected) = self.detectHuman(sortedClusters)
-		self.publishMarkers(firstLeg, secondLeg, humanPosition, twoLegsDetected)
+		(firstLeg, secondLeg, humanPosition, firstLegDetected, twoLegsDetected) = self.detectHuman(sortedClusters)
+		self.publishMarkers(firstLeg, secondLeg, humanPosition, firstLegDetected, twoLegsDetected, sortedClusters)
 		self.controlRosbot(humanPosition)
 		
 		
