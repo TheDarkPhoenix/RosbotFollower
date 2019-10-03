@@ -121,12 +121,11 @@ class RosbotFollower:
 		#longer side to shorter side proportion read is 1.5 (not used
 		# - not really reliable)
 		
-		self.speedPGain = 1./1.9 #1./8
-		self.angularSpeedPGain = 1. #1./2
+		self.speedPGain = 1./1.9
+		self.angularSpeedPGain = 1.
 		
 		#distance/angle has to be larger for rosbot to start moving
 		self.minHumanDistance = 0.3
-		self.maxHumanFullSpeedDistance = 0.6 #at what distane robot sholud use proportional controler
 		self.minHumanAngle = 0.05
 		
 		#if button message is not received within buttonTimeout seconds
