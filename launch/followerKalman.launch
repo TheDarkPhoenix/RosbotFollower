@@ -1,9 +1,6 @@
 <launch>
 	<include file="$(find rplidar_ros)/launch/rplidar.launch" />
-	<node pkg="rosbot_description" type="serial_bridge.py" name="serial_bridge" output="screen">
-    		<param name="port" value="/dev/ttyCORE2" />
-    		<param name="baud" value="500000" />
- 	</node>
+	<include file="$(find rosbot_ekf)/launch/all.launch"/>
  	
  	<rosparam command="load" file="$(find joint_state_controller)/joint_state_controller.yaml" />
   	<node name="joint_state_controller_spawner" pkg="controller_manager" type="spawner" output="screen" args="joint_state_controller" />

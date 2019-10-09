@@ -396,12 +396,12 @@ class RosbotFollower:
 		a = math.atan2(humanPosition.y, -humanPosition.x)
 		
 		if r > self.minHumanDistance:
-			xSpeed = -(r - self.minHumanDistance) * self.speedPGain
+			xSpeed = (r - self.minHumanDistance) * self.speedPGain
 		else:
 			xSpeed = 0
 		
 		if abs(a) > self.minHumanAngle:
-			zAngularSpeed = a * self.angularSpeedPGain
+			zAngularSpeed = -a * self.angularSpeedPGain
 		else:
 			zAngularSpeed = 0
 
